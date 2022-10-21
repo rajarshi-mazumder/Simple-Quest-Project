@@ -89,18 +89,20 @@ public class Quest
             player.activePrimeNoQuests.Remove(this);
             GameManager.OnPrimeNoAdd -= CheckIfSolved;
         }
-        Debug.Log(descritpion + " quest failed");
+        
     }
     public void FinishQuest()
     {
         EndQuest();
         successAction();
+        Debug.Log(descritpion + " quest completed");
     }
 
     public void FailQuest()
     {
         EndQuest();
         failureAction();
+        Debug.Log(descritpion + " quest failed");
     }
 }
 
