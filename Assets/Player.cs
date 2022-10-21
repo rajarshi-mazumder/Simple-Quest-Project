@@ -12,5 +12,7 @@ public class Player : MonoBehaviour
 
     public List<Quest> activePrimeNoQuests;
     public List<Quest> activeCompositeNoQuests;
-    
+
+
+    public int playerLevel = 0;
 }

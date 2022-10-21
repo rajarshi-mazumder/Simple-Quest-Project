@@ -8,7 +8,12 @@ public class Quest
 {
     public string descritpion;
     public int successTarget;
+    
+    public float timeLimit;
+    public float timer = 0f;
+
     Action successAction;
+    Action failureAction;
     Player player;
 
     public enum QuestType { PrimeNo, CompositeNo};
@@ -18,12 +23,14 @@ public class Quest
     {
         descritpion = "";
     }
-    public Quest(QuestType q, string desc, int successCondition, Action onSuccess)
+    public Quest(QuestType q, string desc, int  successCondition, Action onSuccess, float failureCondition=0, Action onFailure=null)
     {
         questType = q;
         descritpion = desc;
         successTarget = successCondition;
+        timeLimit = failureCondition;
         successAction = onSuccess;
+        failureAction = onFailure;
 
         if (questType == QuestType.PrimeNo)
         {
@@ -43,24 +50,57 @@ public class Quest
     {
         if (questType == QuestType.PrimeNo)
         {
-            if (player.PrimeNos.Count >= successTarget)
-                FinishQuest();
+            if (failureAction != null)
+            {
+                if (timer < timeLimit && player.PrimeNos.Count >= successTarget)
+                    FinishQuest();
+                else if (timer >= timeLimit)
+                    FailQuest();
+            }
+            else if (player.PrimeNos.Count >= successTarget)
+                    FinishQuest();
+            
         }
         if (questType == QuestType.CompositeNo)
         {
-            if (player.CompositeNos.Count >= successTarget)
+            if (failureAction != null)
+            {
+                if (timer < timeLimit && player.CompositeNos.Count >= successTarget)
+                    FinishQuest();
+                else if (timer >= timeLimit)
+                    FailQuest();
+            }
+            else if (player.CompositeNos.Count >= successTarget)
                 FinishQuest();
         }
     }
-    public void FinishQuest()
-    {   
+
+    public void EndQuest()
+    {
         player.activeQuests.Remove(this);
 
         if (questType == QuestType.CompositeNo)
+        {
             player.activeCompositeNoQuests.Remove(this);
+            GameManager.OnCompositeAdd -= CheckIfSolved;
+        }
         if (questType == QuestType.PrimeNo)
+        {
             player.activePrimeNoQuests.Remove(this);
-        GameManager.OnPrimeNoAdd -= CheckIfSolved;
+            GameManager.OnPrimeNoAdd -= CheckIfSolved;
+        }
+        Debug.Log(descritpion + " quest failed");
+    }
+    public void FinishQuest()
+    {
+        EndQuest();
         successAction();
     }
+
+    public void FailQuest()
+    {
+        EndQuest();
+        failureAction();
+    }
 }
+
