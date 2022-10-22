@@ -2,18 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-
+using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     #region Actions to handle and manage quests 
 
     public Action OnQuestFinish;
     public Action OnQuestFail;
-    public static Action OnPrimeNoAdd;
-    public static Action OnCompositeAdd;
+    
+
+    public static Action<int> OnNumberEnter;
+    public static Action<int, Quest> CheckForPrime;
+    public static Action<int, Quest> CheckForComposite;
+
+    public int questIdToEnterTo=0;
 
     #endregion
-    public float timeToCompleteQuest = 10f;
+    public float timeToCompleteQuest = 1000f;
+    public Text questTdField;
 
     public Player player;
 
@@ -22,7 +28,8 @@ public class GameManager : MonoBehaviour
         OnQuestFinish += QuestComplete;
         OnQuestFail += QuestFail;
         player = FindObjectOfType<Player>();
-
+        
+        
     }
     public void Update()
     {
@@ -32,31 +39,31 @@ public class GameManager : MonoBehaviour
 
     public void CreatePrimeNoQuest(int i) // Creates Prime Number quest to enter "i" prime numbers
     {
-        if (player.activePrimeNoQuests.Count==0)
-            InitialiseQuest(Quest.QuestType.PrimeNo, "Input " + i + "prime numbers", 
-                player.PrimeNos.Count + i, OnQuestFinish, timeToCompleteQuest, OnQuestFail);
-        else Debug.Log("Prime number quest already active!");
+        
+         InitialiseQuest( "Input " + i + " prime numbers", 
+                 (i, CheckForPrime), OnQuestFinish, timeToCompleteQuest, OnQuestFail);
+        
     }
     public void CreateCompositeNoQuest(int i)// Creates Composite Number quest to enter "i" composite numbers
     {
-        if (player.activeCompositeNoQuests.Count==0)
-            InitialiseQuest(Quest.QuestType.CompositeNo, "Input " + i + "composite numbers", 
-                player.CompositeNos.Count + i, OnQuestFinish, timeToCompleteQuest, OnQuestFail);
-        else Debug.Log("Composite number quest already active!");
+        InitialiseQuest("Input " + i + " composite numbers",
+                 (i, CheckForComposite), OnQuestFinish, timeToCompleteQuest, OnQuestFail);
     }
 
     // The InitialiseQuest Method contains parameters for quest description and success and failure conditions and actions
-    public void InitialiseQuest(Quest.QuestType q, string desc, int successCondition, Action onSuccess,float failureCondition, Action onFailure )
+    public void InitialiseQuest( string desc, (int target, Action<int, Quest> testCondition) successCondition,
+        Action onSuccess,float failureCondition, Action onFailure )
     {
-        Quest questObj = new Quest(q, desc, successCondition, onSuccess, failureCondition, onFailure);           
+        Quest questObj = new Quest( desc, (successCondition.target, successCondition.testCondition), 
+            onSuccess, failureCondition, onFailure);           
         player.activeQuests.Add(questObj);
 
-        if (questObj.questType == Quest.QuestType.PrimeNo)
+           
             player.activePrimeNoQuests.Add( questObj);
-        else if (questObj.questType == Quest.QuestType.CompositeNo)
+        
             player.activeCompositeNoQuests.Add( questObj);
     }
-
+    
     // Updates timer for active quests and prompts to check if quest has been solved
     void ManageActiveQuestsTimer()
     {
@@ -73,27 +80,36 @@ public class GameManager : MonoBehaviour
 
         }
     }
-
-    public void AddPrimeNoToList(int n)
+    public void QuestToEnterTo(int n) // Take user the quest to which you wish to enter to
     {   
-        if(n==0 || MathCalculations.isPrimeNumber(n))
-        { 
-            player.PrimeNos.Add(n);
-            if(OnPrimeNoAdd!=null)
-                OnPrimeNoAdd();            
-        }    
-
-    }
-   public void AddCompositeNoToList(int n)
-    {
-        if (!MathCalculations.isPrimeNumber(n))
+        
+        Debug.Log("Quest ID set to "+n);
+        if (n < Player.acceptedQuestsCount)
         {
-            player.CompositeNos.Add(n);
-            if (OnCompositeAdd != null)
-                OnCompositeAdd();
-
+            foreach(Quest q in player.activeQuests)
+            {
+                if (q.questId == n)
+                    questIdToEnterTo = n;
+            }
         }
     }
+    public void EnterNoToQuest(int n) // Enter the number to be added to the quest
+    {   
+        try
+        {
+            foreach (Quest q in player.activeQuests)
+            {
+                if (q.questId == questIdToEnterTo)
+                {
+                    q.EnterNumber(n);
+                }
+            }
+        }catch(System.Exception)
+        { }
+
+    }
+    
+
     public void QuestComplete()
     {
         player.playerLevel++;

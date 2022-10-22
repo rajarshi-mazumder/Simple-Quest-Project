@@ -6,6 +6,7 @@ using System;
 [System.Serializable]
 public class Quest
 {
+    public int questId;
     public string descritpion;
     public int successTarget;
     
@@ -14,81 +15,67 @@ public class Quest
 
     Action successAction;
     Action failureAction;
+    Action<int, Quest> testConditionAction;
     Player player;
 
-    public enum QuestType { PrimeNo, CompositeNo};
-    public QuestType questType;
-
-    public Quest()
+    public List<int> enteredNumberSequence;
+    
+    public Quest(string desc, object p)
     {
         descritpion = "";
     }
-    public Quest(QuestType q, string desc, int  successCondition, Action onSuccess, float failureCondition=0, Action onFailure=null)
+    public Quest( string desc, (int  target, Action<int, Quest> testCondition) successCondition, Action onSuccess, float failureCondition=0, Action onFailure=null)
     {
-        questType = q;
         descritpion = desc;
-        successTarget = successCondition;
+        successTarget = successCondition.target;
+        testConditionAction = successCondition.testCondition;
         timeLimit = failureCondition;
         successAction = onSuccess;
         failureAction = onFailure;
 
-        if (questType == QuestType.PrimeNo)
-        {
-            GameManager.OnPrimeNoAdd += CheckIfSolved;
-            
-        }
+        enteredNumberSequence = new List<int>();
+        Player.acceptedQuestsCount++;
+        questId = Player.acceptedQuestsCount-1;
 
-        else if (questType == QuestType.CompositeNo)
-        {
-            GameManager.OnCompositeAdd += CheckIfSolved;
-            
-        }
         player = GameObject.FindObjectOfType<Player>();
     }
 
+    
+    public void EnterNumber(int n)
+    {
+        Debug.Log("Entering "+n+" in questID: " + questId);
+        testConditionAction(n, this);
+        
+        CheckIfSolved();
+
+    }
     public void CheckIfSolved()
     {
-        if (questType == QuestType.PrimeNo)
-        {
+       
+
             if (failureAction != null)
             {
-                if (timer < timeLimit && player.PrimeNos.Count >= successTarget)
+                if (timer < timeLimit && enteredNumberSequence.Count >= successTarget)
                     FinishQuest();
                 else if (timer >= timeLimit)
                     FailQuest();
             }
-            else if (player.PrimeNos.Count >= successTarget)
+            else if (enteredNumberSequence.Count >= successTarget)
                     FinishQuest();
             
-        }
-        if (questType == QuestType.CompositeNo)
-        {
-            if (failureAction != null)
-            {
-                if (timer < timeLimit && player.CompositeNos.Count >= successTarget)
-                    FinishQuest();
-                else if (timer >= timeLimit)
-                    FailQuest();
-            }
-            else if (player.CompositeNos.Count >= successTarget)
-                FinishQuest();
-        }
+
+       
     }
 
     public void EndQuest()
     {
         player.activeQuests.Remove(this);
 
-        if (questType == QuestType.CompositeNo)
+       
         {
             player.activeCompositeNoQuests.Remove(this);
-            GameManager.OnCompositeAdd -= CheckIfSolved;
         }
-        if (questType == QuestType.PrimeNo)
-        {
-            player.activePrimeNoQuests.Remove(this);
-            GameManager.OnPrimeNoAdd -= CheckIfSolved;
-        }
+       
         
     }
     public void FinishQuest()

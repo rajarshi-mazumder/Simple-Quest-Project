@@ -5,14 +5,14 @@ using UnityEngine;
 [System.Serializable]
 public class Player : MonoBehaviour
 {
-    public List<int> PrimeNos;
-    public List<int> CompositeNos;
-    
+    public int playerLevel = 0;
+
     public List<Quest> activeQuests;
+    public static int acceptedQuestsCount=0;
 
     public List<Quest> activePrimeNoQuests;
     public List<Quest> activeCompositeNoQuests;
 
 
-    public int playerLevel = 0;
+    
 }
